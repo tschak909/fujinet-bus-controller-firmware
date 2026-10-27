@@ -18,7 +18,7 @@ for img in "$DIR"/soak_*.nes; do
     mapper=$(python3 -c "import sys;h=open(sys.argv[1],'rb').read(16);print((h[6]>>4)|(h[7]&0xF0))" "$img")
     prg16=$(python3 -c "import sys;print(open(sys.argv[1],'rb').read(16)[4])" "$img")
     chr8=$(python3 -c "import sys;print(open(sys.argv[1],'rb').read(16)[5])" "$img")
-    out=$(cd "$MAME" && FUJINET_LOADER=1 NES_EMU_DIR="$PWD/../fujinet-firmware/pico/nes/emu" \
+    out=$(cd "$MAME" && FUJINET_LOADER=1 NES_EMU_DIR="$OLDPWD/emu" \
           MAPTEST_MAPPER=$mapper MAPTEST_PRG16=$prg16 MAPTEST_CHR8=$chr8 \
           ./mame nes -nes_slot fujinet -cart "$OLDPWD/$img" -video none -sound none -nothrottle \
           -seconds_to_run 120 -autoboot_script "$OLDPWD/emu/maptest.lua" 2>&1 || true)

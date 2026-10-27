@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """cmpfw.py -- build the cartridge firmwares at two refs and compare the binaries.
 
-    pico/tools/cmpfw.py [-b BASE] [-a AFTER | -w] [cart ...]
+    mailbox/tools/cmpfw.py [-b BASE] [-a AFTER | -w] [cart ...]
 
-BASE defaults to the merge base of origin/master and HEAD, AFTER to HEAD; -w takes the
+BASE defaults to the merge base of origin/main and HEAD, AFTER to HEAD; -w takes the
 working tree instead. Both sides build from the same path under build/cmpfw/ with no build
 date, so a change that only moves code gives identical .bin files. Where they differ, the
 functions whose code differs are listed. Exit status: 0 identical, 1 different, 2 failed.
@@ -42,25 +42,25 @@ def extract(ref):
     shutil.rmtree(SRC, ignore_errors=True)
     os.makedirs(SRC)
     if ref is None:
-        listed = git("ls-files", "-co", "--exclude-standard", "-z", "--", "pico")
+        listed = git("ls-files", "-co", "--exclude-standard", "-z", "--", "mailbox")
         for path in listed.split("\0"):
             if path and os.path.isfile(os.path.join(ROOT, path)):
                 dst = os.path.join(SRC, path)
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copy2(os.path.join(ROOT, path), dst)
     else:
-        tar = io.BytesIO(git("archive", ref, "pico", binary=True))
+        tar = io.BytesIO(git("archive", ref, "mailbox", binary=True))
         tarfile.open(fileobj=tar).extractall(SRC, filter="data")
     # Ignored generated headers (channelf, nes) come from this checkout, same on both sides.
     for path in git("ls-files", "-oi", "--exclude-standard", "--",
-                    "pico/*/firmware/include/*.h").splitlines():
+                    "mailbox/*/firmware/include/*.h").splitlines():
         dst = os.path.join(SRC, path)
         if os.path.isdir(os.path.dirname(dst)) and not os.path.exists(dst):
             shutil.copy2(os.path.join(ROOT, path), dst)
 
 
 def build(cart, side):
-    src = os.path.join(SRC, "pico", cart, "firmware")
+    src = os.path.join(SRC, "mailbox", cart, "firmware")
     if not os.path.isfile(os.path.join(src, "CMakeLists.txt")):
         return None
     obj = os.path.join(OBJ, cart)
@@ -134,12 +134,12 @@ def compare(cart, before, after):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("-b", "--base",
-                    help="before ref (default: merge base of origin/master and HEAD)")
+                    help="before ref (default: merge base of origin/main and HEAD)")
     ap.add_argument("-a", "--after", default="HEAD", help="after ref (default: HEAD)")
     ap.add_argument("-w", "--worktree", action="store_true", help="after = the working tree")
     ap.add_argument("carts", nargs="*", default=CARTS)
     args = ap.parse_args()
-    base = args.base or git("merge-base", "origin/master", "HEAD").strip()
+    base = args.base or git("merge-base", "origin/main", "HEAD").strip()
     after = None if args.worktree else args.after
 
     built = {}
