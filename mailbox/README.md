@@ -14,6 +14,7 @@ chip and has its own build.
 | [common/](common/) | FujiBus codec, USB transport, mailbox service, push store, build helpers and host tests shared by the carts |
 | [template/](template/) | the cart a new bring-up starts from: an 8K ROM window on an RP2354B, run by no console |
 | [tools/](tools/) | `cmpfw.py` builds the carts at two git refs and names the functions whose code differs |
+| [studio2/](studio2/) | RCA Studio II cartridge on an RP2354B; serves the CDP1861 display raster itself |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
