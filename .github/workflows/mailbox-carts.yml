@@ -1,0 +1,507 @@
+# Build coverage for the mailbox cartridge trees.
+
+name: "mailbox carts"
+
+on:
+  push:
+    paths:
+      - "mailbox/**"
+      - ".github/workflows/mailbox-carts.yml"
+  pull_request:
+    paths:
+      - "mailbox/**"
+      - ".github/workflows/mailbox-carts.yml"
+  workflow_dispatch:
+
+env:
+  PICO_SDK_VERSION: "2.3.0"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  host-tests:
+    name: "host tests (no hardware, no SDK)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The codecs, mappers and bus models are free of pico-sdk and TinyUSB so they
+      # can be tested here. Every mailbox/*/firmware/host_test/Makefile is run, so a
+      # new cart needs no step of its own.
+      - name: Cartridge host tests
+        run: |
+          for t in mailbox/common/host_test mailbox/*/firmware/host_test; do
+            [ -f "$t/Makefile" ] || continue
+            echo "::group::$t"
+            make -C "$t"
+            echo "::endgroup::"
+          done
+
+      - name: Intellivision -- FujiBus codec
+        working-directory: mailbox/intellivision/firmware/host_test
+        run: |
+          gcc -Wall -Wextra -I.. -I../include \
+              -o test_fujibus test_fujibus.c ../src/fujibus.c
+          ./test_fujibus
+
+      # Compile-only: this one is driven by a corpus of real Intellivision ROM
+      # files, which are not in the repo. Running it needs `test_bootmap
+      # <rom>...` against a local collection.
+      - name: Intellivision -- boot map (compiles)
+        working-directory: mailbox/intellivision/firmware/host_test
+        run: |
+          gcc -Wall -Wextra -I../include -o test_bootmap \
+              test_bootmap.c ../src/bootmap.c ../src/memory.c ../src/utils.c
+
+  a7800-console-client:
+    name: "Atari 7800 6502 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cc65
+        run: sudo apt-get update && sudo apt-get install -y cc65
+      # The boot block, signed and verified with the vendored 7800sign, and the
+      # loader and bring-up clients, each through tools/checkrom.py.
+      - name: Build the boot block, the loader and the clients
+        working-directory: mailbox/atari-7800
+        run: ./build.sh
+
+  a5200-console-client:
+    name: "Atari 5200 6502 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cc65
+        run: sudo apt-get update && sudo apt-get install -y cc65
+      # The bring-up clients, each through tools/checkrom.py, and
+      # testrom/fujinet.inc against fuji_mailbox.h.
+      - name: Build the clients
+        working-directory: mailbox/atari-5200
+        run: ./build.sh
+
+  o2-console-client:
+    name: "Odyssey 2 8048 client"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Macro Assembler AS. There is NO distro package for it -- Debian's and
+      # Ubuntu's "asl"/"asl-*" are the Advanced Simulation Library, something
+      # else entirely -- so it is built from the release-tracking mirror of
+      # Alfred Arnold's source. build.sh picks a native asl up from PATH in
+      # preference to its wine fallback.
+      - name: Cache Macro Assembler AS
+        id: cache-asl
+        uses: actions/cache@v4
+        with:
+          path: ~/asl
+          key: asl-upstream-${{ runner.os }}-v1
+
+      - name: Build Macro Assembler AS
+        if: steps.cache-asl.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch upstream \
+            https://github.com/Macroassembler-AS/asl-releases.git /tmp/asl-src
+          cd /tmp/asl-src
+          cp Makefile.def-samples/Makefile.def-i386-unknown-linux2.x.x Makefile.def
+          # The sample pins -march=i586, which will not build on x86-64.
+          sed -i 's|^CFLAGS.*|CFLAGS = -O2 -w|' Makefile.def
+          make -j"$(nproc)"
+          mkdir -p ~/asl
+          # Just the two binaries build.sh uses. `make install` is not run: it
+          # wants system directories, and the message catalogs are compiled
+          # into the binaries, so nothing else has to travel with them.
+          cp asl p2bin ~/asl/
+
+      - name: Put AS on PATH
+        run: echo "$HOME/asl" >> "$GITHUB_PATH"
+
+      # Assembles all four carts. tools/checklayout.py runs on each and fails
+      # the build if two pinned routines have grown into each other -- p2bin
+      # only says "overlapping memory allocation!" with no location, and every
+      # routine here is placed with an explicit org because conditional jumps on
+      # the 8048 are page-relative.
+      - name: Assemble
+        working-directory: mailbox/o2
+        run: ./build.sh hello fujitest fujiboot fujicfg apptest
+
+      # No code may live above $7FF. CALL and JMP carry 11 address bits and the
+      # twelfth comes from the MB flag, which the assembler sets on the
+      # assumption that MB tracks the PC's own A11 -- an assumption a call from
+      # the high bank into the low one silently breaks, sending the next call
+      # 2K lower, into the console BIOS.
+      - name: Check no code in the high bank
+        working-directory: mailbox/o2
+        run: |
+          python3 - <<'PY'
+          import re, sys
+          bad = 0
+          for cart in ("fujitest", "fujiboot", "fujicfg"):
+              hi = [int(m.group(1), 16)
+                    for line in open("build/%s.lst" % cart, errors="ignore")
+                    for m in [re.match(r"^(?:\(\d+\))?\s*\d+/\s*([0-9A-F]{3,4}) : (?:[0-9A-F]{2} )+", line)]
+                    if m and 0x800 <= int(m.group(1), 16) < 0xD00]
+              print("%-10s code bytes in the high bank: %d" % (cart, len(hi)))
+              bad += len(hi)
+          sys.exit(1 if bad else 0)
+          PY
+
+      # apptest is protocol 2 (APPBANK): its pages live at $800-$F1F by design,
+      # so it is not in the high-bank check above, and the mapper decodes it
+      # as APPBANK from its page-0 header.
+      - name: Decode every built cart with the image mapper
+        working-directory: mailbox/o2
+        run: |
+          make -C firmware/host_test
+          build/host_test/test_o2map build/hello.bin build/fujitest.bin \
+                                     build/fujiboot.bin build/fujicfg.bin \
+                                     build/apptest.bin
+
+  astrocade-console-client:
+    name: "Astrocade Z80 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # zmac is vendored (tools/zmac, public domain -- see its PROVENANCE.md)
+      # because no distro packages it and there is no release mirror to pin.
+      # build.sh compiles it on demand; tools/checkrom.py then enforces the
+      # fuji_mailbox.h layout on every image: 0x55 sentinel, exactly 8K, the
+      # claim signature, and nothing above the 0x1AFF ROM top. The banked
+      # clients also run the packers' self-verification: mkbanked re-parses
+      # its own output, and mkgame walks every bank of the synthetic
+      # 256K/512K images with a pure-python transcription of the MAME read
+      # handlers.
+      - name: Assemble and validate
+        working-directory: mailbox/astrocade
+        run: ./build.sh fujitest fujiboot fujicfg fujibank gamebank
+
+  channelf-console-client:
+    name: "Channel F F8 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Macro Assembler AS again, F3850 target this time. Same cache and build
+      # recipe as the o2 job, so one AS build serves both.
+      - name: Cache Macro Assembler AS
+        id: cache-asl
+        uses: actions/cache@v4
+        with:
+          path: ~/asl
+          key: asl-upstream-${{ runner.os }}-v1
+
+      - name: Build Macro Assembler AS
+        if: steps.cache-asl.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch upstream \
+            https://github.com/Macroassembler-AS/asl-releases.git /tmp/asl-src
+          cd /tmp/asl-src
+          cp Makefile.def-samples/Makefile.def-i386-unknown-linux2.x.x Makefile.def
+          sed -i 's|^CFLAGS.*|CFLAGS = -O2 -w|' Makefile.def
+          make -j"$(nproc)"
+          mkdir -p ~/asl
+          cp asl p2bin ~/asl/
+
+      - name: Put AS on PATH
+        run: echo "$HOME/asl" >> "$GITHUB_PATH"
+
+      # hello and romctest are plain 2K Videocarts; the rest are FujiNet
+      # clients and must come out at exactly 16K with the "FUJI" claim at
+      # $47FC, which tools/checkrom.py --claim enforces. A client that is short
+      # -- or that lost the ORG -- would otherwise boot with the mailbox
+      # silently dead.
+      - name: Assemble the F8 clients
+        working-directory: mailbox/channelf
+        run: |
+          ASL=$HOME/asl/asl P2BIN=$HOME/asl/p2bin \
+            ./build.sh hello romctest fujitest fujiboot fujicfg fujibank
+
+  atari2600-console-client:
+    name: "Atari 2600 6502 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Macro Assembler AS again, 6502 this time. Same cache and build recipe
+      # as the other AS jobs.
+      - name: Cache Macro Assembler AS
+        id: cache-asl
+        uses: actions/cache@v4
+        with:
+          path: ~/asl
+          key: asl-upstream-${{ runner.os }}-v1
+
+      - name: Build Macro Assembler AS
+        if: steps.cache-asl.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch upstream \
+            https://github.com/Macroassembler-AS/asl-releases.git /tmp/asl-src
+          cd /tmp/asl-src
+          cp Makefile.def-samples/Makefile.def-i386-unknown-linux2.x.x Makefile.def
+          sed -i 's|^CFLAGS.*|CFLAGS = -O2 -w|' Makefile.def
+          make -j"$(nproc)"
+          mkdir -p ~/asl
+          cp asl p2bin ~/asl/
+
+      - name: Put AS on PATH
+        run: echo "$HOME/asl" >> "$GITHUB_PATH"
+
+      # Builds all four demos; CONFIG lives in fujinet-config. p2bin pads to its
+      # range, so a client that overflows its bank is truncated silently.
+      - name: Assemble the 6502 clients
+        working-directory: mailbox/atari-2600
+        run: ./build.sh
+
+  studio2-console-client:
+    name: "Studio II 1802 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Macro Assembler AS, CDP1802 target; same cache and recipe as the o2
+      # and Channel F jobs.
+      - name: Cache Macro Assembler AS
+        id: cache-asl
+        uses: actions/cache@v4
+        with:
+          path: ~/asl
+          key: asl-upstream-${{ runner.os }}-v1
+
+      - name: Build Macro Assembler AS
+        if: steps.cache-asl.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch upstream \
+            https://github.com/Macroassembler-AS/asl-releases.git /tmp/asl-src
+          cd /tmp/asl-src
+          cp Makefile.def-samples/Makefile.def-i386-unknown-linux2.x.x Makefile.def
+          sed -i 's|^CFLAGS.*|CFLAGS = -O2 -w|' Makefile.def
+          make -j"$(nproc)"
+          mkdir -p ~/asl
+          cp asl p2bin ~/asl/
+
+      # build.sh checks testrom/fujinet.inc against the C headers, rejects any
+      # 3-cycle opcode or IDL in a listing (the display is always on), and
+      # refuses an image with a page the cart may not claim.
+      - name: Assemble and validate
+        working-directory: mailbox/studio2
+        run: ASL=$HOME/asl/asl ./build.sh hello fujitest fujiboot s2gfx
+
+  nes-console-client:
+    name: "NES 6502 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # cc65 from the distro is enough for ca65/ld65; the clients are pure
+      # assembly. tools/checkrom.py then enforces the fuji_mailbox.h layout on
+      # every image (header, claim, vectors, no RMW on the hotspot pages) and
+      # the loader ROM's fixed entry points.
+      - run: sudo apt-get update && sudo apt-get install -y cc65
+      - name: Assemble and validate
+        working-directory: mailbox/nes
+        run: ./build.sh loader hello fujitest fujiboot
+
+  arcadia-console-client:
+    name: "Arcadia 2001 2650 clients"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Macro Assembler AS again (2650 target this time). Same cache and
+      # build recipe as the o2 job; build.sh prefers a native asl on PATH.
+      - name: Cache Macro Assembler AS
+        id: cache-asl
+        uses: actions/cache@v4
+        with:
+          path: ~/asl
+          key: asl-upstream-${{ runner.os }}-v1
+
+      - name: Build Macro Assembler AS
+        if: steps.cache-asl.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch upstream \
+            https://github.com/Macroassembler-AS/asl-releases.git /tmp/asl-src
+          cd /tmp/asl-src
+          cp Makefile.def-samples/Makefile.def-i386-unknown-linux2.x.x Makefile.def
+          sed -i 's|^CFLAGS.*|CFLAGS = -O2 -w|' Makefile.def
+          make -j"$(nproc)"
+          mkdir -p ~/asl
+          cp asl p2bin ~/asl/
+
+      - name: Put AS on PATH
+        run: echo "$HOME/asl" >> "$GITHUB_PATH"
+
+      # Assembles the three clients. tools/mkimage.py folds each $0000-$2FFF
+      # flat into the 8K cart image and rejects code in the $1000-$1FFF
+      # console-RAM hole or the mailbox pages; tools/checkrom.py then enforces
+      # the fuji_mailbox.h layout (BCTA/RETC header, the claim, nothing above
+      # the 0x1AFF ROM top).
+      - name: Assemble
+        working-directory: mailbox/arcadia
+        run: ./build.sh fujitest fujiboot fujicfg fujibank
+
+      # The 2650's return stack is 8 entries deep and on chip -- a call graph
+      # deeper than that silently corrupts returns. Every client must stay
+      # within it.
+      - name: Check the 8-deep call stack
+        working-directory: mailbox/arcadia
+        run: |
+          for c in fujitest fujiboot fujicfg fujibank; do
+              python3 tools/checkdepth.py \
+                  testrom/$c.asm testrom/fujilib.inc testrom/fujidisp.inc
+          done
+
+  # Each cart's link runs mailbox/common/tools/checksram.py: core1's loop, and everything
+  # it branches to, must be in SRAM.
+  cartridge-firmware:
+    name: "RP2040 cartridge firmware"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned, not master: an SDK that moves
+      # under CI turns an unrelated upstream change into a red build.
+      - uses: actions/checkout@v4
+        with:
+          repository: raspberrypi/pico-sdk
+          ref: ${{ env.PICO_SDK_VERSION }}
+          path: pico-sdk
+          submodules: true
+
+      # build-essential builds the SDK's host tools (picotool, pioasm); the SDK
+      # builds picotool without USB support, so it needs no libusb.
+      - run: sudo apt-get update && sudo apt-get install -y
+               build-essential cmake ninja-build
+               gcc-arm-none-eabi libnewlib-arm-none-eabi
+
+      # Both configurations: the FujiNet build is what ships, and the stock one
+      # proves the vendored PicoPAC still builds with our changes applied.
+      - name: Odyssey 2 cartridge (FujiNet)
+        working-directory: mailbox/o2
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh
+
+      - name: Odyssey 2 cartridge (stock PicoPAC)
+        working-directory: mailbox/o2
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh --stock
+
+      # Pulls no-OS-FatFS-SD (v3.6.2) and littlefs (master) over the network via
+      # FetchContent. Its `git describe --tags` falls back to version 0.0 on a
+      # shallow checkout, which is fine here.
+      - name: Intellivision cartridge (fujicard)
+        working-directory: mailbox/intellivision/firmware
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          cmake -B build -DPICO_BOARD=fujicard -DCMAKE_BUILD_TYPE=Release -G Ninja
+          ninja -C build
+
+      # CONFIG comes from firmware/baked/; the Z80 clients have their own job.
+      - name: Astrocade cartridge (fujicade)
+        working-directory: mailbox/astrocade
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          ./build-cart.sh --baked
+
+      # A placeholder client, so there is something to bake: 4K of open bus
+      # with the claim where the fixed half puts it. The real clients need AS,
+      # which the atari2600-console-client job builds and checks.
+      - name: Atari 2600 cartridge (fujivcs)
+        working-directory: mailbox/atari-2600
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          mkdir -p build
+          python3 - <<'PY'
+          import pathlib
+          img = bytearray(b'\xff' * 0x1000)
+          img[0x0F10:0x0F14] = b'FUJI'
+          pathlib.Path('build/fujidir.bin').write_bytes(img)
+          PY
+          python3 tools/mkromh.py build/fujidir.bin > firmware/include/fujiconfigrom.h
+          cmake -S firmware -B firmware/build-fujivcs -DPICO_BOARD=fujivcs
+          cmake --build firmware/build-fujivcs -j"$(nproc)"
+          python3 tools/checksram.py firmware/build-fujivcs/fujivcs.elf
+          arm-none-eabi-size firmware/build-fujivcs/fujivcs.elf
+
+      - name: Channel F Videocart (fujichannelf)
+        working-directory: mailbox/channelf
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          # CONFIG comes from firmware/baked/, so this job needs no AS.
+          ./build-cart.sh --baked
+
+      # From firmware/baked/ alone, so the 1802 assembler is not needed here.
+      - name: Studio II cartridge (fujistudio2_rp2354b)
+        working-directory: mailbox/studio2
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh --baked
+
+      # build-cart.sh bakes the loader ROM and a client into the firmware, so
+      # the 6502 side assembles first. The RP2354B build runs entirely from
+      # SRAM (copy_to_ram); tools/checksram.py asserts core1's symbols there.
+      - name: NES cartridge (fujines_rp2354b)
+        working-directory: mailbox/nes
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          sudo apt-get install -y cc65
+          ./build.sh loader hello fujitest fujiboot
+          ./build-cart.sh
+
+      # The resident CONFIG and the loader page come from firmware/baked/
+      # (z88dk is not on the runners).
+      - name: Master System cartridge (fujisms_rp2354b)
+        working-directory: mailbox/sms
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh --baked
+
+      # CONFIG, the loader and the signed boot block come from
+      # firmware/baked/.
+      - name: Atari 7800 cartridge (fuji7800_rp2354b)
+        working-directory: mailbox/atari-7800
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh --baked
+
+      # CONFIG comes from firmware/baked/.
+      - name: Atari 5200 cartridge (fuji5200_rp2354b)
+        working-directory: mailbox/atari-5200
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh --baked
+
+      # The boot page, CONFIG and the loader come from firmware/baked/ (z88dk
+      # is not on the runners). The PIO model test needs this build's pioasm,
+      # so it runs here.
+      - name: S-100 card (fujis100_rp2354b)
+        working-directory: mailbox/s100
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          ./build-cart.sh --baked
+          make -C firmware/host_test
+
+      - name: Template cartridge (fujitemplate)
+        working-directory: mailbox/template
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: ./build-cart.sh --baked
+
+      - name: Arcadia cartridge (fujiarcadia)
+        working-directory: mailbox/arcadia
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        run: |
+          # CONFIG comes from firmware/baked/; the 2650 client job assembles the clients.
+          ./build-cart.sh --baked
