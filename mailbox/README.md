@@ -19,6 +19,7 @@ chip and has its own build.
 | [astrocade/](astrocade/) | Bally Astrocade cartridge on an RP2040 `fujicade` board; Z80 clients |
 | [channelf/](channelf/) | Fairchild Channel F Videocart on an RP2040 `fujichannelf` board; F8 clients |
 | [nes/](nes/) | NES cartridge on an RP2354B with two 512K SRAMs for PRG and CHR; 6502 clients |
+| [sms/](sms/) | Sega Master System cartridge on an RP2354B with 1 MB of SRAM; Z80 clients |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources

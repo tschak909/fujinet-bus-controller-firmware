@@ -4,7 +4,7 @@
 #   make <cart>          that cart's firmware from its baked client (needs PICO_SDK_PATH)
 #   make firmware        every cart in BAKED
 
-BAKED = template studio2 arcadia astrocade channelf
+BAKED = template studio2 arcadia astrocade channelf sms
 
 HOST_TESTS = common/host_test $(wildcard */firmware/host_test)
 
