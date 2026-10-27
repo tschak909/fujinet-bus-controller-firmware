@@ -21,6 +21,7 @@ chip and has its own build.
 | [nes/](nes/) | NES cartridge on an RP2354B with two 512K SRAMs for PRG and CHR; 6502 clients |
 | [sms/](sms/) | Sega Master System cartridge on an RP2354B with 1 MB of SRAM; Z80 clients |
 | [atari-7800/](atari-7800/) | Atari 7800 cartridge on an RP2354B with 512K of SRAM; 6502 clients |
+| [atari-5200/](atari-5200/) | Atari 5200 cartridge on an RP2354B serving the window itself, behind a 74HCT541; 6502 clients |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
