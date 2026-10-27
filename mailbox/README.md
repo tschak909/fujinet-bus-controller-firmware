@@ -20,6 +20,7 @@ chip and has its own build.
 | [channelf/](channelf/) | Fairchild Channel F Videocart on an RP2040 `fujichannelf` board; F8 clients |
 | [nes/](nes/) | NES cartridge on an RP2354B with two 512K SRAMs for PRG and CHR; 6502 clients |
 | [sms/](sms/) | Sega Master System cartridge on an RP2354B with 1 MB of SRAM; Z80 clients |
+| [atari-7800/](atari-7800/) | Atari 7800 cartridge on an RP2354B with 512K of SRAM; 6502 clients |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
