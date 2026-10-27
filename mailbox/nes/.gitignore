@@ -1,0 +1,6 @@
+build/
+firmware/build-*/
+testrom/font.inc
+testrom/bootcfg.inc
+firmware/include/fujiconfigrom.h
+firmware/include/nesloaderrom.h

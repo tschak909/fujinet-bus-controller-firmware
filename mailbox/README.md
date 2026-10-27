@@ -18,6 +18,7 @@ chip and has its own build.
 | [arcadia/](arcadia/) | Emerson Arcadia 2001 cartridge on an RP2040; 2650 clients |
 | [astrocade/](astrocade/) | Bally Astrocade cartridge on an RP2040 `fujicade` board; Z80 clients |
 | [channelf/](channelf/) | Fairchild Channel F Videocart on an RP2040 `fujichannelf` board; F8 clients |
+| [nes/](nes/) | NES cartridge on an RP2354B with two 512K SRAMs for PRG and CHR; 6502 clients |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
