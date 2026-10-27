@@ -1,4 +1,4 @@
-# pico/sms
+# mailbox/sms
 
 FujiNet for the Sega Master System: an RP2354B cartridge with 1 MB of SRAM that serves CONFIG and
 a memory-mapped mailbox, loads any image the ESP32-S3 pushes into the SRAM, and runs it there.
@@ -34,7 +34,7 @@ a memory-mapped mailbox, loads any image the ESP32-S3 pushes into the SRAM, and 
   loader page, which reads each 8K window at `$8000` while the SRAM latches the bytes the cart
   drives, restores what the BIOS left (snooped at power-on), and jumps to `$0000`; the cart flips
   on that fetch.
-- The ESP32 side is the `fujiversal-sms` board ([lib/bus/rs232/](../../lib/bus/rs232/) over USB CDC).
+- The ESP32 side is the `fujiversal-sms` board ([lib/bus/rs232/](https://github.com/FujiNetWIFI/fujinet-firmware/tree/master/lib/bus/rs232/) over USB CDC).
 
 ## Build
 - `./build.sh` assembles the loader and builds the clients into `build/` (z88dk at

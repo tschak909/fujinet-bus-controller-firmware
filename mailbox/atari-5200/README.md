@@ -1,4 +1,4 @@
-# pico/atari-5200
+# mailbox/atari-5200
 
 FujiNet for the Atari 5200: an RP2354B cartridge that serves the console's 32K cart window from
 its own SRAM, loads any image the ESP32-S3 pushes, hands it to the console's BIOS as at power-on,
@@ -39,7 +39,7 @@ and serves a mailbox the console reaches by reads alone.
   in, and the console's own BIOS starts it.
 - GAME: the image runs, the mailbox off. APP: an image with the claim keeps the arena over every
   bank. A power cycle (the 5200 has no reset line) brings CONFIG back.
-- The ESP32 side is the `fujiversal-atari5200` board ([lib/bus/rs232/](../../lib/bus/rs232/) over
+- The ESP32 side is the `fujiversal-atari5200` board ([lib/bus/rs232/](https://github.com/FujiNetWIFI/fujinet-firmware/tree/master/lib/bus/rs232/) over
   USB CDC).
 
 ## Build

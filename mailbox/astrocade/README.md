@@ -26,7 +26,7 @@ path:
 
 The window map, register file, interlocks and boot protocol live in
 **`firmware/include/fuji_mailbox.h`**, with the register numbers and values it takes from
-[pico/common/](../common/)'s `fuji_mailbox_proto.h` -- the single source of truth for the
+[common/](../common/)'s `fuji_mailbox_proto.h` -- the single source of truth for the
 RP2040 firmware, the MAME device, and (hand-mirrored in
 `testrom/fujilib.inc`) the Z80 clients. In one line each:
 
@@ -46,7 +46,7 @@ them harmless: REGDATA disarms after one use, a transaction launches only
 on a fresh nonzero SEQ, and booting an unclaiming image kills hotspot
 decode for the session. Our own clients also run `DI`/polled, so I stays 0
 and refresh never lands in cart space at all. `test_fujimail`, from
-[pico/common/](../common/), fuzzes exactly these cases -- MAME cannot model
+[common/](../common/), fuzzes exactly these cases -- MAME cannot model
 refresh, so the host test is where they run.
 
 **Booting** (the part every multicart gets wrong once): the client arms the
@@ -118,7 +118,7 @@ tools/                  vendored zmac (PD, see PROVENANCE.md), checkrom,
 
 The shared protocol sources -- `fujimail.c` (hotspot decode, SEQ/ACKSEQ and
 SLICE_ECHO interlocks, DBC push receiver) and `fujibus.c` (SLIP + FujiBus
-codec), both from [pico/common/](../common/), and `astromap.c`
+codec), both from [common/](../common/), and `astromap.c`
 (image -> window) -- are hardware-free, tested with plain gcc, and compiled
 verbatim into both the firmware and the MAME device. Emulator and cartridge
 stay identical by construction, not by discipline.
@@ -256,6 +256,6 @@ board file. Before committing a PCB:
   magic writes, want one scope session on a real console; the protocol
   tolerates all outcomes but the bus loop's tri-state discipline should be
   confirmed, not assumed.
-- The ESP32-S3 side is `build-platforms/platformio-fujiversal-astrocade.ini`
+- The ESP32-S3 side is `build-platforms/platformio-fujiversal-astrocade.ini` in fujinet-firmware
   plus `include/pinmap/fujiversal-astrocade.h` -- console-agnostic, USB CDC
   host, VID filter 0xCafe.

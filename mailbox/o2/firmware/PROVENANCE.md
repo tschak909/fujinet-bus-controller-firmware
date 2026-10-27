@@ -1,4 +1,4 @@
-# Provenance of `pico/o2/firmware`
+# Provenance of `mailbox/o2/firmware`
 
 ## What is vendored here
 

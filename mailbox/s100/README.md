@@ -1,4 +1,4 @@
-# pico/s100
+# mailbox/s100
 
 FujiNet for S-100 machines: an RP2354B on an S-100 card that answers a FujiBus pipe, an Altair
 FDC+-compatible floppy controller, an 88-2SIO-compatible serial pair and a boot page, and relays

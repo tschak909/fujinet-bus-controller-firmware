@@ -83,13 +83,10 @@ ninja -C build
 # flash the resulting Minty_fujicard.uf2 to the board in BOOTSEL mode
 ```
 
-From the repo root, `./build_pico.py fujiversal-intv` (or `./build.sh -P -e fujiversal-intv`)
-does exactly this -- driven by the `[fujinet] pico_*` keys in
-`build-platforms/platformio-fujiversal-intv.ini` -- and is also what runs automatically as
-a `pre:` extra_script (`build_pico.py`) whenever the `fujiversal-intv` PlatformIO env is
-built, generating `fn_pico_blob_data.cpp` in its build dir from the result. The manual steps
-above remain useful for iterating on the RP2040/RP2350 firmware directly without going
-through PlatformIO at all.
+fujinet-firmware embeds this firmware in its `fujiversal-intv` builds with its `build_pico.py`,
+which runs the steps above from the `[fujinet] pico_*` keys in
+`build-platforms/platformio-fujiversal-intv.ini`. The manual steps above are for iterating on the
+RP2040/RP2350 firmware directly.
 
 `fujibus.c`'s codec, standalone (no RP2040 toolchain needed):
 ```sh
@@ -101,7 +98,7 @@ FujiNet CONFIG boot ROM (from `~/Workspace/fujinet-config/intv/`):
 ```sh
 cd ~/Workspace/fujinet-config/intv
 make rom.h
-cp config_rom.h /path/to/fujinet-firmware/pico/intellivision/firmware/include/fujiconfigrom.h
+cp config_rom.h /path/to/fujinet-firmware/mailbox/intellivision/firmware/include/fujiconfigrom.h
 ```
 then rebuild the RP2040/RP2350 firmware as above. See that repository's own README for how
 to test CONFIG against jzIntv (the FujiNet-patched Intellivision emulator) without hardware,

@@ -1,4 +1,4 @@
-# pico/common
+# mailbox/common
 
 Code the cartridge firmwares share: the FujiBus SLIP codec, its USB CDC transport to the
 ESP32-S3, a CDC-only USB device, and the start of the carts' CMake builds.

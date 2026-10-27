@@ -1,4 +1,4 @@
-# pico/studio2
+# mailbox/studio2
 
 FujiNet for the RCA Studio II: an RP2354B cartridge that serves the console's CDP1802 bus in
 software, carries a read-hotspot mailbox to an ESP32-S3 `fujiversal-studio2` over USB CDC, and
@@ -25,7 +25,7 @@ serves the CDP1861's display itself.
 ## How it fits
 
 The mailbox service (`fujimail.c`), FujiBus codec, USB transport and USB device come from
-[pico/common/](../common/); the arena offsets are the 5200's.
+[common/](../common/); the arena offsets are the 5200's.
 
 The ESP32-S3 side is plain `BUILD_RS232` with USB host transport (`fujiversal-studio2`); it
 pushes a mounted `.st2`/`.bin` to the cart as DBC frames. The cart plans and stages it, and the

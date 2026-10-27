@@ -1,4 +1,4 @@
-# `pico/o2/firmware` — the RP2040 cartridge
+# `mailbox/o2/firmware` — the RP2040 cartridge
 
 A fork of [aotta/PicoPAC](https://github.com/aotta/PicoPAC) with the FujiNet
 mailbox added — see `PROVENANCE.md` for what is vendored, what is not, and the
@@ -15,7 +15,7 @@ by the emulator, not by a console.
 
 Upstream files sit flat at the root; everything FujiNet adds is under `src/`,
 `include/` and `host_test/`, so an upstream merge stays a readable diff. The
-FujiBus codec and its USB transport come from [pico/common/](../../common/).
+FujiBus codec and its USB transport come from [common/](../../common/).
 
 | File | Role |
 |---|---|

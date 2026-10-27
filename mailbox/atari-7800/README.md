@@ -1,4 +1,4 @@
-# pico/atari-7800
+# mailbox/atari-7800
 
 FujiNet for the Atari 7800: an RP2354B cartridge with 512K of SRAM that boots past the console's
 signature check, loads any image the ESP32-S3 pushes into the SRAM, runs it there, and serves a
@@ -45,7 +45,7 @@ memory-mapped mailbox, a POKEY and a High Score Cart.
 - GAME: a pushed image runs from the SRAM, the mailbox off. APP: an image that carries the claim
   keeps the loader and arena below `$1000` and, if its claim sets the RAM flag, 16K of cart RAM at
   `$4000`.
-- The ESP32 side is the `fujiversal-atari7800` board ([lib/bus/rs232/](../../lib/bus/rs232/) over
+- The ESP32 side is the `fujiversal-atari7800` board ([lib/bus/rs232/](https://github.com/FujiNetWIFI/fujinet-firmware/tree/master/lib/bus/rs232/) over
   USB CDC).
 
 ## Build

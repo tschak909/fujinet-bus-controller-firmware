@@ -1,6 +1,6 @@
-# pico/template
+# mailbox/template
 
-The cartridge a new bring-up starts from: an 8K ROM window on an RP2354B, with pico/common
+The cartridge a new bring-up starts from: an 8K ROM window on an RP2354B, with mailbox/common
 doing the FujiBus link, the mailbox protocol and the build. No console runs it.
 
 ## Layout
@@ -21,7 +21,7 @@ doing the FujiBus link, the mailbox protocol and the build. No console runs it.
 ## How it fits
 - Every protocol, link and build piece comes from [common/](../common/); what is here is what
   differs from cart to cart.
-- A new cart copies this directory, as `docs/pico-cart-bringup.md` describes: it renames the
+- A new cart copies this directory, as [docs/cart-bringup.md](../docs/cart-bringup.md) describes: it renames the
   `tmpl` prefix, then replaces the board, the pin map and bus loop, the mapper, the mailbox
   offsets and the client. It adds a MAME device whose `emu/apply.sh` uses
   `common/emu/graft.lib.sh`, as [arcadia/](../arcadia/)'s does.

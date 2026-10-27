@@ -302,7 +302,7 @@ Trust F5 for judging what a real mount looks like.
 
 ## CI
 
-`.github/workflows/pico-carts.yml` covers this tree and `pico/intellivision`,
+`.github/workflows/mailbox-carts.yml` covers this tree and `mailbox/intellivision`,
 which previously had none at all — which is exactly how a repo-wide rename of
 `fujiCommandID_t` reached the Intellivision cartridge and left
 `#define CMD::NET_OPEN 0x4F` sitting in the tree. Nothing built it, so nothing

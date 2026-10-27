@@ -29,7 +29,7 @@ offsets the Astrocade uses — which is why `fujimail.c`, `fujibus.c` and the
 whole wire protocol are shared verbatim and only `fuji_mailbox.h` forks.
 
 `firmware/include/fuji_mailbox.h`, with the register numbers and values it takes from
-`pico/common/include/fuji_mailbox_proto.h`, is the single source of truth (the RP2040
+`mailbox/common/include/fuji_mailbox_proto.h`, is the single source of truth (the RP2040
 firmware, the MAME device, and the hand-mirrored `testrom/fujilib.inc` all
 follow it). Three gates keep stray reads harmless: a REGDATA read disarms
 after one use, a transaction launches only on a fresh nonzero sequence
@@ -100,7 +100,7 @@ firmware/            RP2040 cartridge firmware (pico-sdk)
   src/arcmap.c             image gate/plan/apply + the connector decode
   include/arcapp.h         protocol 2 serving: the window, bank selects, cart RAM
   src/fuji_cart.c          also `fuji_tick_target()`, where the common tick paints
-                           (fujimail.c, fuji_tick.c, the FujiBus codec and USB are pico/common's)
+                           (fujimail.c, fuji_tick.c, the FujiBus codec and USB are mailbox/common's)
   baked/fujiconfigrom.h    the client served at power-on when there is no fresh build/gen
   host_test/               desktop tests (no hardware, no SDK)
 emu/                 MAME cart device + graft script + lua harnesses (bankprobe.lua)
