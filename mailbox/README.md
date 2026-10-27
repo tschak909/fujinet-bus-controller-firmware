@@ -26,6 +26,7 @@ chip and has its own build.
 | [intellivision/](intellivision/) | Intellivision cartridge on the RP2354A `fujicard` board; a fork of Minty (GPLv3, see `intellivision/PROVENANCE.md`) |
 | [o2/](o2/) | Odyssey 2 and Videopac cartridge on an RP2040; a fork of PicoPAC, see `o2/firmware/PROVENANCE.md`; 8048 clients |
 | [coleco/](coleco/) | ColecoVision cartridge, a 32K window with every mapper; built on an older copy of the shared code than the others |
+| [atari-2600/](atari-2600/) | Atari 2600 cartridge on an RP2040: gtortone's PlusCart-Pico port (GPLv3) and the FujiNet mailbox cart beside it, on an older copy of the shared code |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
