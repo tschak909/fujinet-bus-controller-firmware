@@ -25,6 +25,7 @@ chip and has its own build.
 | [s100/](s100/) | S-100 card (Altair, IMSAI) on an RP2354B: a FujiBus pipe, an Altair FDC+ whose drives are FujiNet slots, an 88-2SIO and a boot page; 8080 clients |
 | [intellivision/](intellivision/) | Intellivision cartridge on the RP2354A `fujicard` board; a fork of Minty (GPLv3, see `intellivision/PROVENANCE.md`) |
 | [o2/](o2/) | Odyssey 2 and Videopac cartridge on an RP2040; a fork of PicoPAC, see `o2/firmware/PROVENANCE.md`; 8048 clients |
+| [coleco/](coleco/) | ColecoVision cartridge, a 32K window with every mapper; built on an older copy of the shared code than the others |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
