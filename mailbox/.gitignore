@@ -1,0 +1,4 @@
+*.lst
+.vscode
+.pio
+platformio.ini
