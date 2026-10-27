@@ -23,6 +23,7 @@ chip and has its own build.
 | [atari-7800/](atari-7800/) | Atari 7800 cartridge on an RP2354B with 512K of SRAM; 6502 clients |
 | [atari-5200/](atari-5200/) | Atari 5200 cartridge on an RP2354B serving the window itself, behind a 74HCT541; 6502 clients |
 | [s100/](s100/) | S-100 card (Altair, IMSAI) on an RP2354B: a FujiBus pipe, an Altair FDC+ whose drives are FujiNet slots, an 88-2SIO and a boot page; 8080 clients |
+| [intellivision/](intellivision/) | Intellivision cartridge on the RP2354A `fujicard` board; a fork of Minty (GPLv3, see `intellivision/PROVENANCE.md`) |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
