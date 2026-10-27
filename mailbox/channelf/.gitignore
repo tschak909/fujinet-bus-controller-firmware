@@ -1,0 +1,6 @@
+build/
+firmware/build-*/
+testrom/*.p
+testrom/*.lst
+testrom/font.inc
+testrom/bootcfg.inc

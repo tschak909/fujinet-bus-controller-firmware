@@ -17,6 +17,7 @@ chip and has its own build.
 | [studio2/](studio2/) | RCA Studio II cartridge on an RP2354B; serves the CDP1861 display raster itself |
 | [arcadia/](arcadia/) | Emerson Arcadia 2001 cartridge on an RP2040; 2650 clients |
 | [astrocade/](astrocade/) | Bally Astrocade cartridge on an RP2040 `fujicade` board; Z80 clients |
+| [channelf/](channelf/) | Fairchild Channel F Videocart on an RP2040 `fujichannelf` board; F8 clients |
 
 ## How it fits
 - A cart's `build-cart.sh` sets its board, firmware name and client, then sources
