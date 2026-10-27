@@ -476,6 +476,10 @@ def main():
     doList = args.list
     to_check = args.file
 
+  # mailbox/ is copied from fujinet-firmware and keeps its formatting
+  if script_mode == "pre-commit" or args.against:
+    to_check = [path for path in to_check if not path.startswith("mailbox/")]
+
   if doShow and len(to_check) > 1:
     print("Can only show a single file on stdout")
     exit(1)
